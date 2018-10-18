@@ -4,6 +4,8 @@
 
 loci.formats.in.FilePatternReader     # pattern
 
+loci.formats.in.JPEGURLReader         # jpgurl
+
 # readers for compressed/archive files
 loci.formats.in.ZipReader             # zip
 
