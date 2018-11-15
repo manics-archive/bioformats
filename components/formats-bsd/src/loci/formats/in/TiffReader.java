@@ -206,7 +206,7 @@ public class TiffReader extends BaseTiffReader {
     // check for another file with the same name
 
     if (isGroupFiles()) {
-      Location currentFile = new Location(currentId).getAbsoluteFile();
+      Location currentFile = getLocation(currentId).getAbsoluteFile();
       String currentName = currentFile.getName();
       Location directory = currentFile.getParentFile();
       String[] files = directory.list(true);

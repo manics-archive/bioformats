@@ -34,9 +34,12 @@ package loci.formats;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Hashtable;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.Vector;
 import java.util.Arrays;
@@ -188,6 +191,9 @@ public abstract class SubResolutionFormatReader extends FormatHandler
   private ServiceFactory factory;
   private OMEXMLService service;
 
+  /** Map of cache locations */
+  private HashMap<String, Location> locationIdMap = new HashMap<>();
+
   // -- Constructors --
 
   /** Constructs a format reader with the given name and default suffix. */
@@ -248,7 +254,7 @@ public abstract class SubResolutionFormatReader extends FormatHandler
     String[] usedFiles = getUsedFiles();
     for (String used : usedFiles) {
       if (used.equals(file)) return true;
-      String path = new Location(file).getAbsolutePath();
+      String path = getLocation(file).getAbsolutePath();
       if (used.equals(path)) return true;
     }
     return false;
@@ -1372,8 +1378,8 @@ public abstract class SubResolutionFormatReader extends FormatHandler
   public void setId(String id) throws FormatException, IOException {
     LOGGER.debug("{} initializing {}", this.getClass().getSimpleName(), id);
 
-    if (currentId == null || !new Location(id).getAbsolutePath().equals(
-      new Location(currentId).getAbsolutePath()))
+    if (currentId == null || !getLocation(id).getAbsolutePath().equals(
+      getLocation(currentId).getAbsolutePath()))
     {
       initFile(id);
       MetadataStore store = getMetadataStore();
@@ -1446,6 +1452,10 @@ public abstract class SubResolutionFormatReader extends FormatHandler
   @Override
   public void close() throws IOException {
     close(false);
+    for (Iterator<Map.Entry<String, Location>> it = locationIdMap.entrySet().iterator(); it.hasNext(); ) {
+      it.next();
+      it.remove();
+    }
   }
 
   /**
@@ -1455,5 +1465,23 @@ public abstract class SubResolutionFormatReader extends FormatHandler
    */
   protected CoreMetadata currentCore() {
     return core.get(series, resolution);
+  }
+
+  /**
+   * Return a cached Location for the given id (only single argument form of Location() supported).
+   * Creates a new Location if not in cache.
+   * @param id id
+   * @return The Location
+   */
+  protected Location getLocation(String id) {
+    Location loc = locationIdMap.get(id);
+    if (loc == null) {
+      loc = new Location(id);
+      locationIdMap.put(id, loc);
+      System.out.println("Created new Location: " + id);
+    } else {
+      System.out.println("Found cached Location: " + id);
+    }
+    return loc;
   }
 }
