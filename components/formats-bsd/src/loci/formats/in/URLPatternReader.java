@@ -35,18 +35,29 @@ package loci.formats.in;
 import loci.common.DataTools;
 import loci.common.Location;
 import loci.formats.ClassList;
+import loci.formats.CoreMetadata;
 import loci.formats.FormatException;
 import loci.formats.IFormatReader;
 import loci.formats.ImageReader;
+import loci.formats.ReaderWrapper;
+import loci.formats.WrappedReader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Pattern;
 
 /**
- * A Pattern reader designed for use with opaque remote resources that should not be permanently fetched
- * The urlpattern file represents all images in the fileset, individual files are not available to clients
+ * A reader designed for use with opaque remote resources that should not be permanently fetched
+ * The urlpattern file represents the fileset, individual files are not available to clients
  */
-public class URLPatternReader extends FilePatternReader {
+public class URLPatternReader extends WrappedReader {
+
+  // -- Constants --
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(URLPatternReader.class);
 
   // -- Fields --
 
@@ -56,23 +67,88 @@ public class URLPatternReader extends FilePatternReader {
 
   /** Constructs a new pattern reader. */
   public URLPatternReader() {
-    super("URL File pattern", new String[]{"urlpattern"}, false);
-    ClassList<IFormatReader> classes = ImageReader.getDefaultReaderClasses();
-    Class<? extends IFormatReader>[] classArray = classes.getClasses();
-    ClassList<IFormatReader> newClasses = new ClassList<IFormatReader>(IFormatReader.class);
-    for (Class<? extends IFormatReader> c : classArray) {
-      if (!c.equals(FilePatternReader.class) && !c.equals(URLPatternReader.class)) {
-        newClasses.addClass(c);
+    super("URL File pattern", new String[]{"urlpattern"});
+  }
+
+  /** Initialise the helper with a list of readers */
+  protected void initHelper(ClassList<IFormatReader> newClasses) {
+    class RemoteReader extends ReaderWrapper {
+      public RemoteReader(IFormatReader r) {
+        super(r);
+      }
+    };
+
+    if (newClasses == null) {
+      ClassList<IFormatReader> classes = ImageReader.getDefaultReaderClasses();
+      Class<? extends IFormatReader>[] classArray = classes.getClasses();
+      newClasses = new ClassList<>(IFormatReader.class);
+      for (Class<? extends IFormatReader> c : classArray) {
+        if(!WrappedReader.class.isAssignableFrom(c)) {
+          newClasses.addClass(c);
+        }
       }
     }
-    initHelper(newClasses);
+    helper = new RemoteReader(new ImageReader(newClasses));
   }
 
   // -- IFormatReader methods --
 
   @Override
+  public byte[][] get8BitLookupTable() throws FormatException, IOException {
+    if (getCurrentFile() == null) {
+      return null;
+    }
+    return helper.get8BitLookupTable();
+  }
+
+  @Override
+  public short[][] get16BitLookupTable() throws FormatException, IOException {
+    if (getCurrentFile() == null) {
+      return null;
+    }
+    return helper.get16BitLookupTable();
+  }
+
+  @Override
+  public String[] getSeriesUsedFiles(boolean noPixels) {
+    if (noPixels) {
+      return new String[] {currentId};
+    }
+    String[] helperFiles = helper.getSeriesUsedFiles(noPixels);
+    String[] allFiles = new String[helperFiles.length + 1];
+    allFiles[0] = currentId;
+    System.arraycopy(helperFiles, 0, allFiles, 1, helperFiles.length);
+    return allFiles;
+  }
+
+  @Override
   public String[] getUsedFiles(boolean noPixels) {
     return new String[] {currentId};
+  }
+
+  @Override
+  public List<CoreMetadata> getCoreMetadataList() {
+    // Only used for determining the object type.
+    List<CoreMetadata> oldcore = helper.getCoreMetadataList();
+    List<CoreMetadata> newcore = new ArrayList<CoreMetadata>();
+
+    for (int s=0; s<oldcore.size(); s++) {
+      CoreMetadata newMeta = oldcore.get(s).clone(this, s);
+      newMeta.resolutionCount = oldcore.get(s).resolutionCount;
+      newcore.add(newMeta);
+    }
+
+    return newcore;
+  }
+
+  @Override
+  public boolean isSingleFile(String id) throws FormatException, IOException {
+    return false;
+  }
+
+  @Override
+  public boolean hasCompanionFiles() {
+    return true;
   }
 
   // -- Internal FormatReader methods --
@@ -99,16 +175,15 @@ public class URLPatternReader extends FilePatternReader {
       throw new FormatException("Expected maximum of two lines:" + input);
     }
 
+    ClassList readerClasses = null;
     if (input.length > 1) {
       String reader = input[1];
       LOGGER.trace("urlpattern reader: {}", reader);
-      ClassList readerClasses = new ClassList<>(IFormatReader.class);
+      readerClasses = new ClassList<>(IFormatReader.class);
       readerClasses.parseLine(reader);
-      initHelper(readerClasses);
     }
+    initHelper(readerClasses);
 
-    helper.setUsingPatternIds(true);
-    helper.setCanChangePattern(false);
     helper.setId(pattern);
     core = helper.getCoreMetadataList();
   }
