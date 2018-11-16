@@ -47,15 +47,14 @@ import loci.formats.IFormatReader;
 import loci.formats.ImageReader;
 import loci.formats.ReaderWrapper;
 import loci.formats.WrappedReader;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
  */
 public class FilePatternReader extends WrappedReader {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(ReaderWrapper.class);
+  // -- Fields --
+  private FileStitcher helper;
 
   // -- Constructor --
 
@@ -69,14 +68,18 @@ public class FilePatternReader extends WrappedReader {
       new ClassList<IFormatReader>(IFormatReader.class);
     for (Class<? extends IFormatReader> c : classArray) {
       if(!WrappedReader.class.isAssignableFrom(c)) {
-        System.out.println("Wrapping reader: " + c);
         newClasses.addClass(c);
       }
     }
     helper = new FileStitcher(new ImageReader(newClasses));
-    System.out.println(helper);
 
     suffixSufficient = true;
+  }
+
+  // -- WrappedReader methods --
+
+  protected ReaderWrapper getHelper() {
+    return helper;
   }
 
   // -- IFormatReader methods --
@@ -146,12 +149,6 @@ public class FilePatternReader extends WrappedReader {
     return true;
   }
 
-  @Override
-  public void close(boolean fileOnly) throws IOException {
-    LOGGER.error("Closing {}", helper);
-    helper.close(fileOnly);
-  }
-
   // -- Internal FormatReader methods --
 
   /* @see loci.formats.FormatReader#initFile(String) */
@@ -168,11 +165,10 @@ public class FilePatternReader extends WrappedReader {
       pattern = dir + File.separator + pattern;
     }
 
-    FileStitcher stitcher = (FileStitcher) helper;
-    stitcher.setUsingPatternIds(true);
-    stitcher.setCanChangePattern(false);
-    stitcher.setId(pattern);
-    core = stitcher.getCoreMetadataList();
+    helper.setUsingPatternIds(true);
+    helper.setCanChangePattern(false);
+    helper.setId(pattern);
+    core = helper.getCoreMetadataList();
   }
 
 }

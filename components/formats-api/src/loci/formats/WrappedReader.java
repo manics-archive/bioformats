@@ -33,24 +33,18 @@
 package loci.formats;
 
 import loci.formats.meta.MetadataStore;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Hashtable;
 import java.util.List;
 
 /**
- * Helper class for readers which wrap other readers
+ * Helper class for readers which wrap other readers.
+ *
+ * getHelper() must return a valid object once the constructor has completed unless the reader is
+ * closed. returning null will cause strange errors.
  */
 public abstract class WrappedReader extends FormatReader {
-
-  private static final Logger LOGGER = LoggerFactory.getLogger(ReaderWrapper.class);
-
-  // -- Fields --
-
-  /** Helper class that reads images */
-  protected ReaderWrapper helper;
 
   // -- Constructor --
 
@@ -61,399 +55,405 @@ public abstract class WrappedReader extends FormatReader {
     super(format, suffixes);
   }
 
+  /** Get the helper class that reads images */
+  protected abstract ReaderWrapper getHelper();
+
   // -- IFormatReader methods --
 
   @Override
   public void reopenFile() throws IOException {
-    helper.reopenFile();
+    getHelper().reopenFile();
   }
 
   @Override
   public int getImageCount() {
-    return helper.getImageCount();
+    return getHelper().getImageCount();
   }
 
   @Override
   public boolean isRGB() {
-    return helper.isRGB();
+    return getHelper().isRGB();
   }
 
   @Override
   public int getSizeX() {
-    return helper.getSizeX();
+    return getHelper().getSizeX();
   }
 
   @Override
   public int getSizeY() {
-    return helper.getSizeY();
+    return getHelper().getSizeY();
   }
 
   @Override
   public int getSizeZ() {
-    return helper.getSizeZ();
+    return getHelper().getSizeZ();
   }
 
   @Override
   public int getSizeC() {
-    return helper.getSizeC();
+    return getHelper().getSizeC();
   }
 
   @Override
   public int getSizeT() {
-    return helper.getSizeT();
+    return getHelper().getSizeT();
   }
 
   @Override
   public int getPixelType() {
-    return helper.getPixelType();
+    return getHelper().getPixelType();
   }
 
   @Override
   public int getBitsPerPixel() {
-    return helper.getBitsPerPixel();
+    return getHelper().getBitsPerPixel();
   }
 
   @Override
   public int getEffectiveSizeC() {
-    return helper.getEffectiveSizeC();
+    return getHelper().getEffectiveSizeC();
   }
 
   @Override
   public int getRGBChannelCount() {
-    return helper.getRGBChannelCount();
+    return getHelper().getRGBChannelCount();
   }
 
   @Override
   public boolean isIndexed() {
-    return helper.isIndexed();
+    return getHelper().isIndexed();
   }
 
   @Override
   public boolean isFalseColor() {
-    return helper.isFalseColor();
+    return getHelper().isFalseColor();
   }
 
   @Override
   public byte[][] get8BitLookupTable() throws FormatException, IOException {
-    return helper.get8BitLookupTable();
+    return getHelper().get8BitLookupTable();
   }
 
   @Override
   public short[][] get16BitLookupTable() throws FormatException, IOException {
-    return helper.get16BitLookupTable();
+    return getHelper().get16BitLookupTable();
   }
 
   @Override
   public Modulo getModuloZ() {
-    return helper.getModuloZ();
+    return getHelper().getModuloZ();
   }
 
   @Override
   public Modulo getModuloC() {
-    return helper.getModuloC();
+    return getHelper().getModuloC();
   }
 
   @Override
   public Modulo getModuloT() {
-    return helper.getModuloT();
+    return getHelper().getModuloT();
   }
 
   @Override
   public int getThumbSizeX() {
-    return helper.getThumbSizeX();
+    return getHelper().getThumbSizeX();
   }
 
   @Override
   public int getThumbSizeY() {
-    return helper.getThumbSizeY();
+    return getHelper().getThumbSizeY();
   }
 
   @Override
   public boolean isLittleEndian() {
-    return helper.isLittleEndian();
+    return getHelper().isLittleEndian();
   }
 
   @Override
   public String getDimensionOrder() {
-    return helper.getDimensionOrder();
+    return getHelper().getDimensionOrder();
   }
 
   @Override
   public boolean isOrderCertain() {
-    return helper.isOrderCertain();
+    return getHelper().isOrderCertain();
   }
 
   @Override
   public boolean isThumbnailSeries() {
-    return helper.isThumbnailSeries();
+    return getHelper().isThumbnailSeries();
   }
 
   @Override
   public boolean isInterleaved() {
-    return helper.isInterleaved();
+    return getHelper().isInterleaved();
   }
 
   @Override
   public boolean isInterleaved(int subC) {
-    return helper.isInterleaved(subC);
+    return getHelper().isInterleaved(subC);
   }
 
   @Override
   public byte[] openBytes(int no) throws FormatException, IOException {
-    return helper.openBytes(no);
+    return getHelper().openBytes(no);
   }
 
   @Override
   public byte[] openBytes(int no, int x, int y, int w, int h)
     throws FormatException, IOException
   {
-    return helper.openBytes(no, x, y, w, h);
+    return getHelper().openBytes(no, x, y, w, h);
   }
 
   @Override
   public byte[] openBytes(int no, byte[] buf)
     throws FormatException, IOException
   {
-    return helper.openBytes(no, buf);
+    return getHelper().openBytes(no, buf);
   }
 
   @Override
   public byte[] openBytes(int no, byte[] buf, int x, int y, int w, int h)
     throws FormatException, IOException
   {
-    return helper.openBytes(no, buf, x, y, w, h);
+    return getHelper().openBytes(no, buf, x, y, w, h);
   }
 
   @Override
   public Object openPlane(int no, int x, int y, int w, int h)
     throws FormatException, IOException
   {
-    return helper.openPlane(no, x, y, w, h);
+    return getHelper().openPlane(no, x, y, w, h);
   }
 
   @Override
   public byte[] openThumbBytes(int no) throws FormatException, IOException {
-    return helper.openThumbBytes(no);
+    return getHelper().openThumbBytes(no);
   }
 
   @Override
   public void close(boolean fileOnly) throws IOException {
-    LOGGER.error("Closing {}", helper);
-    helper.close(fileOnly);
+    ReaderWrapper helper = getHelper();
+    if (helper != null) {
+      helper.close(fileOnly);
+    }
   }
 
   @Override
   public int getSeriesCount() {
-    return helper.getSeriesCount();
+    return getHelper().getSeriesCount();
   }
 
   @Override
   public void setSeries(int no) {
-    helper.setSeries(no);
+    getHelper().setSeries(no);
   }
 
   @Override
   public int getSeries() {
-    return helper.getSeries();
+    return getHelper().getSeries();
   }
 
   @Override
   public void setGroupFiles(boolean group) {
-    helper.setGroupFiles(group);
+    getHelper().setGroupFiles(group);
   }
 
   @Override
   public boolean isGroupFiles() {
-    return helper.isGroupFiles();
+    return getHelper().isGroupFiles();
   }
 
   @Override
   public boolean isMetadataComplete() {
-    return helper.isMetadataComplete();
+    return getHelper().isMetadataComplete();
   }
 
   @Override
   public void setNormalized(boolean normalize) {
-    helper.setNormalized(normalize);
+    getHelper().setNormalized(normalize);
   }
 
   @Override
-  public boolean isNormalized() { return helper.isNormalized(); }
+  public boolean isNormalized() { return getHelper().isNormalized(); }
 
   @Override
   public void setOriginalMetadataPopulated(boolean populate) {
-    helper.setOriginalMetadataPopulated(populate);
+    getHelper().setOriginalMetadataPopulated(populate);
   }
 
   @Override
   public boolean isOriginalMetadataPopulated() {
-    return helper.isOriginalMetadataPopulated();
+    return getHelper().isOriginalMetadataPopulated();
   }
 
   @Override
   public String[] getSeriesUsedFiles(boolean noPixels) {
-    return helper.getSeriesUsedFiles(noPixels);
+    return getHelper().getSeriesUsedFiles(noPixels);
   }
 
   @Override
   public String[] getUsedFiles(boolean noPixels) {
-    return helper.getUsedFiles(noPixels);
+    return getHelper().getUsedFiles(noPixels);
   }
 
   @Override
   public int getIndex(int z, int c, int t) {
-    return helper.getIndex(z, c, t);
+    return getHelper().getIndex(z, c, t);
   }
 
   @Override
   public int[] getZCTCoords(int index) {
-    return helper.getZCTCoords(index);
+    return getHelper().getZCTCoords(index);
   }
 
   @Override
   public Object getMetadataValue(String field) {
-    return helper.getMetadataValue(field);
+    return getHelper().getMetadataValue(field);
   }
 
   @Override
   public Object getSeriesMetadataValue(String field) {
-    return helper.getSeriesMetadataValue(field);
+    return getHelper().getSeriesMetadataValue(field);
   }
 
   @Override
   public Hashtable<String, Object> getGlobalMetadata() {
-    return helper.getGlobalMetadata();
+    return getHelper().getGlobalMetadata();
   }
 
   @Override
   public Hashtable<String, Object> getSeriesMetadata() {
-    return helper.getSeriesMetadata();
+    return getHelper().getSeriesMetadata();
   }
 
   @Override
   public List<CoreMetadata> getCoreMetadataList() {
-    return helper.getCoreMetadataList();
+    return getHelper().getCoreMetadataList();
   }
 
   @Override
   public void setMetadataFiltered(boolean filter) {
-    helper.setMetadataFiltered(filter);
+    getHelper().setMetadataFiltered(filter);
   }
 
   @Override
-  public boolean isMetadataFiltered() { return helper.isMetadataFiltered(); }
+  public boolean isMetadataFiltered() { return getHelper().isMetadataFiltered(); }
 
   @Override
   public void setMetadataStore(MetadataStore store) {
-    helper.setMetadataStore(store);
+    getHelper().setMetadataStore(store);
   }
 
   @Override
   public MetadataStore getMetadataStore() {
-    return helper.getMetadataStore();
+    return getHelper().getMetadataStore();
   }
 
   @Override
   public Object getMetadataStoreRoot() {
-    return helper.getMetadataStoreRoot();
+    return getHelper().getMetadataStoreRoot();
   }
 
   @Override
   public IFormatReader[] getUnderlyingReaders() {
-    return new IFormatReader[] {helper};
+    return new IFormatReader[] {getHelper()};
   }
 
   @Override
   public boolean isSingleFile(String id) throws FormatException, IOException {
-    return helper.isSingleFile(id);
+    return getHelper().isSingleFile(id);
   }
 
   @Override
   public String getDatasetStructureDescription() {
-    return helper.getDatasetStructureDescription();
+    return getHelper().getDatasetStructureDescription();
   }
 
   @Override
   public boolean hasCompanionFiles() {
-    return helper.hasCompanionFiles();
+    return getHelper().hasCompanionFiles();
   }
 
   @Override
   public String[] getPossibleDomains(String id)
     throws FormatException, IOException
   {
-    return helper.getPossibleDomains(id);
+    return getHelper().getPossibleDomains(id);
   }
 
   @Override
   public String[] getDomains() {
-    return helper.getDomains();
+    return getHelper().getDomains();
   }
 
   @Override
   public int getOptimalTileWidth() {
-    return helper.getOptimalTileWidth();
+    return getHelper().getOptimalTileWidth();
   }
 
   @Override
   public int getOptimalTileHeight() {
-    return helper.getOptimalTileHeight();
+    return getHelper().getOptimalTileHeight();
   }
 
   @Override
   public int getCoreIndex() {
-    return helper.getCoreIndex();
+    return getHelper().getCoreIndex();
   }
 
   @Override
   public void setCoreIndex(int no) {
-    helper.setCoreIndex(no);
+    getHelper().setCoreIndex(no);
   }
 
   @Override
   public int seriesToCoreIndex(int series) {
-    return helper.seriesToCoreIndex(series);
+    return getHelper().seriesToCoreIndex(series);
   }
 
   @Override
   public int coreIndexToSeries(int index) {
-    return helper.coreIndexToSeries(index);
+    return getHelper().coreIndexToSeries(index);
   }
 
   @Override
   public int getResolutionCount() {
-    return helper.getResolutionCount();
+    return getHelper().getResolutionCount();
   }
 
   @Override
   public void setResolution(int no) {
-    helper.setResolution(no);
+    getHelper().setResolution(no);
   }
 
   @Override
   public int getResolution() {
-    return helper.getResolution();
+    return getHelper().getResolution();
   }
 
   @Override
   public boolean hasFlattenedResolutions() {
-    return helper.hasFlattenedResolutions();
+    return getHelper().hasFlattenedResolutions();
   }
 
   @Override
   public void setFlattenedResolutions(boolean flattened) {
-    helper.setFlattenedResolutions(flattened);
+    getHelper().setFlattenedResolutions(flattened);
   }
 
   // -- IFormatHandler API methods --
 
   @Override
   public Class<?> getNativeDataType() {
-    return helper.getNativeDataType();
+    return getHelper().getNativeDataType();
   }
 
   @Override
   public void close() throws IOException {
+    ReaderWrapper helper = getHelper();
     if (helper != null) {
       helper.close();
     }

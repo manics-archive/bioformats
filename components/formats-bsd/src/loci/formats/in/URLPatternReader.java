@@ -55,11 +55,9 @@ import java.util.regex.Pattern;
  */
 public class URLPatternReader extends WrappedReader {
 
-  // -- Constants --
-
-  private static final Logger LOGGER = LoggerFactory.getLogger(URLPatternReader.class);
-
   // -- Fields --
+  private static final Logger LOGGER = LoggerFactory.getLogger(URLPatternReader.class);
+  private ReaderWrapper helper;
 
   protected final static Pattern IS_ABSOLUTE_URL = Pattern.compile("([\\p{Alnum}\\+]+)://[^/].*");
 
@@ -68,6 +66,7 @@ public class URLPatternReader extends WrappedReader {
   /** Constructs a new pattern reader. */
   public URLPatternReader() {
     super("URL File pattern", new String[]{"urlpattern"});
+    this.initHelper(new ClassList<>(IFormatReader.class));
   }
 
   /** Initialise the helper with a list of readers */
@@ -78,17 +77,16 @@ public class URLPatternReader extends WrappedReader {
       }
     };
 
-    if (newClasses == null) {
-      ClassList<IFormatReader> classes = ImageReader.getDefaultReaderClasses();
-      Class<? extends IFormatReader>[] classArray = classes.getClasses();
-      newClasses = new ClassList<>(IFormatReader.class);
-      for (Class<? extends IFormatReader> c : classArray) {
-        if(!WrappedReader.class.isAssignableFrom(c)) {
-          newClasses.addClass(c);
-        }
-      }
+    for (Class<? extends IFormatReader> c : newClasses.getClasses()) {
+      LOGGER.error("urlpattern helper: {}", c);
     }
     helper = new RemoteReader(new ImageReader(newClasses));
+  }
+
+  // -- WrappedReader methods --
+
+  protected ReaderWrapper getHelper() {
+    return helper;
   }
 
   // -- IFormatReader methods --
@@ -170,19 +168,26 @@ public class URLPatternReader extends WrappedReader {
     if (!IS_ABSOLUTE_URL.matcher(pattern).matches()) {
       throw new FormatException("Expected absolute URL:" + pattern);
     }
-    if (input.length > 2) {
+//    if (input.length > 2) {
+//      throw new FormatException("Expected maximum of two lines:" + input);
+//    }
 
-      throw new FormatException("Expected maximum of two lines:" + input);
-    }
-
-    ClassList readerClasses = null;
+    ClassList newClasses = new ClassList<>(IFormatReader.class);
     if (input.length > 1) {
-      String reader = input[1];
-      LOGGER.trace("urlpattern reader: {}", reader);
-      readerClasses = new ClassList<>(IFormatReader.class);
-      readerClasses.parseLine(reader);
+      for (int i = 1; i < input.length; ++i) {
+        String reader = input[1];
+        LOGGER.trace("urlpattern reader: {}", reader);
+        newClasses.parseLine(reader);
+      }
+    } else {
+      ClassList<IFormatReader> classes = ImageReader.getDefaultReaderClasses();
+      for (Class<? extends IFormatReader> c : classes.getClasses()) {
+        if(!WrappedReader.class.isAssignableFrom(c)) {
+          newClasses.addClass(c);
+        }
+      }
     }
-    initHelper(readerClasses);
+    initHelper(newClasses);
 
     helper.setId(pattern);
     core = helper.getCoreMetadataList();
