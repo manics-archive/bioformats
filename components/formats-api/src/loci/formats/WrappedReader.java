@@ -61,13 +61,9 @@ public abstract class WrappedReader extends FormatReader {
 
   // -- IMetadataConfigurable methods --
 
-  // Not overridden because this getter may be called before the helper is initialised
-  // getSupportedMetadataLevels()
+  // Not overridden: getSupportedMetadataLevels()
 
-  @Override
-  public void setMetadataOptions(MetadataOptions options) {
-    getHelper().setMetadataOptions(options);
-  }
+  // Not overridden: setMetadataOptions
 
   @Override
   public MetadataOptions getMetadataOptions() {
@@ -272,10 +268,7 @@ public abstract class WrappedReader extends FormatReader {
     return getHelper().getSeries();
   }
 
-  @Override
-  public void setGroupFiles(boolean group) {
-    getHelper().setGroupFiles(group);
-  }
+  // Not overridden: setGroupFiles
 
   @Override
   public boolean isGroupFiles() {
@@ -287,18 +280,12 @@ public abstract class WrappedReader extends FormatReader {
     return getHelper().isMetadataComplete();
   }
 
-  @Override
-  public void setNormalized(boolean normalize) {
-    getHelper().setNormalized(normalize);
-  }
+  // Not overridden: setNormalized
 
   @Override
   public boolean isNormalized() { return getHelper().isNormalized(); }
 
-  @Override
-  public void setOriginalMetadataPopulated(boolean populate) {
-    getHelper().setOriginalMetadataPopulated(populate);
-  }
+  // Not overridden: setOriginalMetadataPopulated
 
   @Override
   public boolean isOriginalMetadataPopulated() {
@@ -350,18 +337,12 @@ public abstract class WrappedReader extends FormatReader {
     return getHelper().getCoreMetadataList();
   }
 
-  @Override
-  public void setMetadataFiltered(boolean filter) {
-    getHelper().setMetadataFiltered(filter);
-  }
+  // Not overridden: setMetadataFiltered
 
   @Override
   public boolean isMetadataFiltered() { return getHelper().isMetadataFiltered(); }
 
-  @Override
-  public void setMetadataStore(MetadataStore store) {
-    getHelper().setMetadataStore(store);
-  }
+  // Not overridden: setMetadataStore
 
   @Override
   public MetadataStore getMetadataStore() {
@@ -455,10 +436,7 @@ public abstract class WrappedReader extends FormatReader {
     return getHelper().hasFlattenedResolutions();
   }
 
-  @Override
-  public void setFlattenedResolutions(boolean flattened) {
-    getHelper().setFlattenedResolutions(flattened);
-  }
+  // Not overridden: setFlattenedResolutions
 
   // -- IFormatHandler API methods --
 
@@ -474,4 +452,45 @@ public abstract class WrappedReader extends FormatReader {
       helper.close();
     }
   }
+
+  // -- WrappedReader helper methods --
+
+  /**
+   * The helper class may not be created until setId is called as the list of helper
+   * readers is obtained from the file.
+   * However some set methods on the helper may be called before setId.
+   *
+   * The relevant set methods are not overridden by this class, instead they are unchanged so
+   * they will default to setting properties on this class.
+   *
+   * These properties can be set on the helper after initialisation by calling this methods
+   *
+   * The following FormatReader methods may be called before setId(),
+   * other methods will throw.
+   * - setGroupFiles
+   * - setNormalized
+   * - setOriginalMetadataPopulated
+   * - setMetadataFiltered
+   * - setMetadataStore
+   * - setFlattenedResolutions
+   *
+   * Developer note: the list of FormatReader methods are those containing
+   * `FormatTools.assertId(currentId, false, 1);`
+   *
+   * @param helper The helper object
+   */
+  protected void callDelayedSetters(ReaderWrapper helper) {
+    // FormatHandler protected variables
+    helper.setMetadataOptions(metadataOptions);
+
+    // FormatReader protected variables
+    helper.setGroupFiles(group);
+    helper.setNormalized(normalizeData);
+    helper.setOriginalMetadataPopulated(saveOriginalMetadata);
+    helper.setMetadataFiltered(filterMetadata);
+    helper.setMetadataStore(metadataStore);
+    helper.setFlattenedResolutions(flattenedResolutions);
+  }
+
+
 }

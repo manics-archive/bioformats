@@ -114,38 +114,14 @@ public class URLPatternReader extends WrappedReader {
     };
 
     if (newClasses == null) {
-      newClasses = new ClassList<>(IFormatReader.class);
-      ClassList<IFormatReader> classes = ImageReader.getDefaultReaderClasses();
-      for (Class<? extends IFormatReader> c : classes.getClasses()) {
-        if (!WrappedReader.class.isAssignableFrom(c)) {
-          newClasses.addClass(c);
-        }
-      }
+      newClasses = ImageReader.getDefaultReaderClasses();
     }
 
     for (Class<? extends IFormatReader> c : newClasses.getClasses()) {
       LOGGER.trace("urlpattern helper: {}", c);
     }
     helper = new RemoteReader(new ImageReader(newClasses));
-
-    if (delayedGroup != null) {
-      helper.setGroupFiles(delayedGroup);
-    }
-    if (delayedNormalize != null) {
-      helper.setNormalized(delayedNormalize);
-    }
-    if (delayedPopulate != null) {
-      helper.setOriginalMetadataPopulated(delayedPopulate);
-    }
-    if (delayedFilter != null) {
-      helper.setMetadataFiltered(delayedFilter);
-    }
-    if (delayedStore != null) {
-      helper.setMetadataStore(delayedStore);
-    }
-    if (delayedFlattened != null) {
-      helper.setFlattenedResolutions(delayedFlattened);
-    }
+    callDelayedSetters(helper);
   }
 
   // -- WrappedReader methods --
@@ -154,44 +130,6 @@ public class URLPatternReader extends WrappedReader {
   protected ReaderWrapper getHelper() {
     FormatTools.assertId(currentId, true, 1);
     return helper;
-  }
-
-  // Delayed FormatReader methods
-
-  @Override
-  public void setGroupFiles(boolean group) {
-    FormatTools.assertId(currentId, false, 1);
-    delayedGroup = group;
-  }
-
-  @Override
-  public void setNormalized(boolean normalize) {
-    FormatTools.assertId(currentId, false, 1);
-    delayedNormalize = normalize;
-  }
-
-  @Override
-  public void setOriginalMetadataPopulated(boolean populate) {
-    FormatTools.assertId(currentId, false, 1);
-    delayedPopulate = populate;
-  }
-
-  @Override
-  public void setMetadataFiltered(boolean filter) {
-    FormatTools.assertId(currentId, false, 1);
-    delayedFilter = filter;
-  }
-
-  @Override
-  public void setMetadataStore(MetadataStore store) {
-    FormatTools.assertId(currentId, false, 1);
-    delayedStore = store;
-  }
-
-  @Override
-  public void setFlattenedResolutions(boolean flattened) {
-    FormatTools.assertId(currentId, false, 1);
-    delayedFlattened = flattened;
   }
 
   // -- IFormatReader methods --

@@ -61,18 +61,6 @@ public class FilePatternReader extends WrappedReader {
   /** Constructs a new pattern reader. */
   public FilePatternReader() {
     super("File pattern", new String[] {"pattern"});
-
-    ClassList<IFormatReader> classes = ImageReader.getDefaultReaderClasses();
-    Class<? extends IFormatReader>[] classArray = classes.getClasses();
-    ClassList<IFormatReader> newClasses =
-      new ClassList<IFormatReader>(IFormatReader.class);
-    for (Class<? extends IFormatReader> c : classArray) {
-      if(!WrappedReader.class.isAssignableFrom(c)) {
-        newClasses.addClass(c);
-      }
-    }
-    helper = new FileStitcher(new ImageReader(newClasses));
-
     suffixSufficient = true;
   }
 
@@ -164,6 +152,10 @@ public class FilePatternReader extends WrappedReader {
     if (new Location(pattern).getParent() == null) {
       pattern = dir + File.separator + pattern;
     }
+
+    ClassList<IFormatReader> newClasses = ImageReader.getDefaultReaderClasses();
+    helper = new FileStitcher(new ImageReader(newClasses));
+    callDelayedSetters(helper);
 
     helper.setUsingPatternIds(true);
     helper.setCanChangePattern(false);
