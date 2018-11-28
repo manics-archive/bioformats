@@ -32,6 +32,7 @@
 
 package loci.formats;
 
+import loci.formats.in.MetadataOptions;
 import loci.formats.meta.MetadataStore;
 
 import java.io.IOException;
@@ -57,6 +58,21 @@ public abstract class WrappedReader extends FormatReader {
 
   /** Get the helper class that reads images */
   protected abstract ReaderWrapper getHelper();
+
+  // -- IMetadataConfigurable methods --
+
+  // Not overridden because this getter may be called before the helper is initialised
+  // getSupportedMetadataLevels()
+
+  @Override
+  public void setMetadataOptions(MetadataOptions options) {
+    getHelper().setMetadataOptions(options);
+  }
+
+  @Override
+  public MetadataOptions getMetadataOptions() {
+    return getHelper().getMetadataOptions();
+  }
 
   // -- IFormatReader methods --
 
